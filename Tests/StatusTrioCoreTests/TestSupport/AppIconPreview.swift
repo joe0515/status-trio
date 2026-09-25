@@ -15,56 +15,32 @@ enum AppIconPreview {
         let bluetoothAudioOptions: BluetoothAudioIconOptions
     }
 
-    /// The approved App Icon artwork: a charging battery, connected Wi-Fi, and
-    /// the Bluetooth-colored volume dots. Shared by both appearance variants so
-    /// the light and dark tiles can never drift into two different drawings.
-    static let status = MenuBarStatus(
-        battery: BatteryStatus(
-            rawPercentage: 76,
-            isPresent: true,
-            isCharging: true,
-            isLowPowerMode: false,
-            isConnectedToPower: true
+    static let state = State(
+        backgroundStyle: .dark,
+        status: MenuBarStatus(
+            battery: BatteryStatus(
+                rawPercentage: 76,
+                isPresent: true,
+                isCharging: true,
+                isLowPowerMode: false,
+                isConnectedToPower: true
+            ),
+            wifi: WiFiStatus(state: .connected, rssi: -52),
+            connection: .wifi,
+            volume: MenuBarVolumeStatus(
+                scalar: 0.6,
+                isMuted: false,
+                deviceName: SheetFixtures.bluetoothDevice.name,
+                currentDevice: SheetFixtures.bluetoothDevice
+            )
         ),
-        wifi: WiFiStatus(state: .connected, rssi: -52),
-        connection: .wifi,
-        volume: MenuBarVolumeStatus(
-            scalar: 0.6,
-            isMuted: false,
-            deviceName: SheetFixtures.bluetoothDevice.name,
-            currentDevice: SheetFixtures.bluetoothDevice
+        bluetoothAudioOptions: BluetoothAudioIconOptions(
+            replacesNetworkIcon: false,
+            usesVolumeColor: true
         )
     )
-
-    static let bluetoothAudioOptions = BluetoothAudioIconOptions(
-        replacesNetworkIcon: false,
-        usesVolumeColor: true
-    )
-
-    static func makeState(for backgroundStyle: DockIconBackgroundStyle) -> State {
-        State(
-            backgroundStyle: backgroundStyle,
-            status: status,
-            bluetoothAudioOptions: bluetoothAudioOptions
-        )
-    }
-
-    /// The dark tile, which the bundle ships as its default App Icon.
-    static let state = makeState(for: .dark)
-
-    /// The tiles the bundle ships as the App Icon's appearance variants, in the
-    /// order the asset catalog lists them. `filename` names the PNG under
-    /// `Support/` that the build reads.
-    static let appearanceVariants: [(style: DockIconBackgroundStyle, filename: String)] = [
-        (.light, "AppIcon-Light.png"),
-        (.dark, "AppIcon.png")
-    ]
 
     static func pngData() throws -> Data {
-        try pngData(for: .dark)
-    }
-
-    static func pngData(for backgroundStyle: DockIconBackgroundStyle) throws -> Data {
         let canvasSize: CGFloat = 1024
         let context = try SheetCanvas.makeContext(width: canvasSize, height: canvasSize, scale: 1)
         context.clear(CGRect(x: 0, y: 0, width: canvasSize, height: canvasSize))
@@ -72,7 +48,7 @@ enum AppIconPreview {
         guard let image = DockIconRenderer.image(
             status: state.status,
             bluetoothAudioOptions: state.bluetoothAudioOptions,
-            backgroundStyle: backgroundStyle
+            backgroundStyle: state.backgroundStyle
         ) else {
             throw PreviewError.iconUnavailable
         }

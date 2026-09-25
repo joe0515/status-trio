@@ -69,13 +69,6 @@ if [[ "${SDK_VERSION%%.*}" -lt 26 ]]; then
     exit 2
 fi
 
-# The themed app icon is compiled once and committed by
-# scripts/build-app-icon.sh rather than rebuilt here, so the release workflow
-# does not depend on one Xcode's actool. Checked before compiling for the same
-# reason as the SDK: a bundle without it silently ships an icon that never
-# follows the system's icon style.
-bash "$ROOT/scripts/build-app-icon.sh" --check
-
 SWIFT_BUILD_ARGS=(build -c "$CONFIGURATION")
 if [[ "$UNIVERSAL_BUILD" == "1" ]]; then
     SWIFT_BUILD_ARGS+=(--arch arm64 --arch x86_64)
@@ -120,11 +113,6 @@ fi
 
 cp "$BIN_PATH/StatusTrio" "$CONTENTS/MacOS/StatusTrio"
 cp -R "$CORE_RESOURCE_BUNDLE" "$CONTENTS/Resources/"
-
-# The themed icon catalog. `CFBundleIconName` in Support/Info.plist is what makes
-# macOS look here for the light, dark, clear and tinted renditions; the `.icns`
-# below stays the icon for macOS 15 and the DMG volume.
-cp "$ROOT/Support/Assets.car" "$CONTENTS/Resources/Assets.car"
 
 SPARKLE_FRAMEWORK_SOURCE="$(find "$ROOT/.build/artifacts" -path '*/Sparkle.xcframework/macos-*/Sparkle.framework' -type d -print -quit)"
 if [[ -z "$SPARKLE_FRAMEWORK_SOURCE" ]]; then
@@ -182,19 +170,6 @@ for plist in "$CONTENTS/Info.plist" "$CONTENTS/Resources/"*.lproj/InfoPlist.stri
         fi
     done
 done
-
-# The system reaches the themed icons through CFBundleIconName; shipping one
-# without the other falls back to the flat .icns and never follows the system's
-# icon style, which is what these two lines catch before signing.
-BUNDLE_ICON_NAME="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIconName' "$CONTENTS/Info.plist" 2>/dev/null || true)"
-if [[ "$BUNDLE_ICON_NAME" != "AppIcon" ]]; then
-    echo "Error: $CONTENTS/Info.plist must set CFBundleIconName to AppIcon; found '${BUNDLE_ICON_NAME}'." >&2
-    exit 1
-fi
-if [[ ! -f "$CONTENTS/Resources/Assets.car" ]]; then
-    echo "Error: $CONTENTS/Resources/Assets.car is missing from the bundle." >&2
-    exit 1
-fi
 
 iconutil --convert icns --output "$CONTENTS/Resources/AppIcon.icns" "$ICONSET_DIR"
 
