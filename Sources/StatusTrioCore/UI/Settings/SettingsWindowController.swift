@@ -101,9 +101,13 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     private func makeWindow() -> NSWindow {
         let contentSize = NSSize(width: SettingsView.width, height: SettingsView.height)
+        // `.miniaturizable` and `.resizable` are what make the two right-hand
+        // traffic lights usable: AppKit disables the minimize button without the
+        // former and the zoom/full-screen button without the latter, which is why
+        // they shipped greyed out and inert.
         let window = NSWindow(
             contentRect: NSRect(origin: .zero, size: contentSize),
-            styleMask: [.titled, .closable, .fullSizeContentView],
+            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -128,6 +132,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.setFrameAutosaveName("SettingsWindow.Sidebar.v1")
         window.center()
         window.setContentSize(contentSize)
+        // The window opens at its designed size and may only grow: the sidebar is
+        // a fixed 190 pt column, so a narrower window would squeeze the detail
+        // pane below what the sections are laid out for.
+        window.contentMinSize = contentSize
+        // A resizable window is not automatically offered a full-screen space.
+        window.collectionBehavior.insert(.fullScreenPrimary)
         return window
     }
 

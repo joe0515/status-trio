@@ -3,6 +3,11 @@
 - 日期：2026-09-13
 - 范围：`StatusTrio.app` 的 Finder/Launchpad 图标，以及菜单栏图标首次渲染时的明暗外观
 
+> **已演进。** 本文的 App 图标只有深色一版（第 3 节），macOS 26 起 Finder /
+> Launchpad / 未运行时的 Dock 需要一份带外观变体的 `Assets.car` 才能跟随系统的
+> 「图标与小组件样式」。现行做法见 [themed-app-icon.md](../../themed-app-icon.md)；
+> 第 4 节（菜单栏首屏）仍然有效。
+
 ## 1. 背景
 
 当前 SwiftPM 打包产物没有 `CFBundleIconFile`，Resources 中也没有图标资源，因此 Finder 和 Launchpad 显示空白 App 图标。

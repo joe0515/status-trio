@@ -26,7 +26,18 @@ final class SettingsWindowControllerTests: XCTestCase {
         defer { window.close() }
 
         XCTAssertEqual(window.title, "设置")
-        XCTAssertFalse(window.styleMask.contains(.resizable))
+        // AppKit greys out the minimize and zoom traffic lights unless the style
+        // mask carries the matching bits, so these two assertions are what keep
+        // the two right-hand buttons clickable. The window still opens at its
+        // designed size and may only grow, because the sidebar is a fixed-width
+        // column that the detail pane is laid out against.
+        XCTAssertTrue(window.styleMask.contains(.miniaturizable))
+        XCTAssertTrue(window.styleMask.contains(.resizable))
+        XCTAssertEqual(
+            window.contentMinSize,
+            NSSize(width: SettingsView.width, height: SettingsView.height)
+        )
+        XCTAssertTrue(window.collectionBehavior.contains(.fullScreenPrimary))
         XCTAssertTrue(window.isVisible)
         XCTAssertEqual(activationApplication.policies, [.regular])
 

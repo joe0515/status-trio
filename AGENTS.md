@@ -58,6 +58,7 @@ run ID, failed stage, root cause, fix, and verification result.
 - Every change to a menu bar icon's rendering or icon-related settings must be mirrored in the Dock icon in the same change. Do not leave the Dock on a default or stale representation.
 - When adding or changing an icon option, update both paths end-to-end as applicable: `SettingsStore` option derivation, `StatusBarController` subscriptions, `AppIconController` subscriptions/state, `DockIconRenderKey` cache inputs, `DockIconRenderer` rendering, and tests covering both menu bar and Dock output.
 - If a setting is intentionally menu-bar-only, the issue or specification must say so explicitly, and the limitation must be documented and covered by a test.
+- Changing the App Icon artwork means changing three surfaces, not one: `Support/AppIcon.png` (the `.icns`), `Support/AppIcon-Light.png` (the light rendition), and `Support/Assets.car` (the themed catalog macOS reads in the Finder, Launchpad and the Dock while the app is not running). Regenerate the catalog with `scripts/build-app-icon.sh`; `scripts/build-app.sh` refuses to assemble a bundle whose catalog is missing an appearance. See [Themed app icon](docs/themed-app-icon.md). A legacy `.icns` alone cannot follow the system's icon style — do not replace the catalog with one.
 
 ## System Settings Pane Routes
 
