@@ -30,17 +30,17 @@ final class DockIconRendererTests: XCTestCase {
         XCTAssertLessThanOrEqual(abs(Int(body.blue) - 23), 3)
     }
 
-    /// The body must sit at the standard macOS icon footprint (~83.8% of the
-    /// canvas, a ~83px margin on a 1024px canvas), not the older 896px body
-    /// (87.5%) that rendered the running Dock tile visibly larger than its
-    /// neighbours. The 7% row lives inside the old body but outside the new
-    /// one, so it pins the shrink against regression.
+    /// The body must sit at the standard macOS icon footprint: the system's
+    /// Liquid Glass squircle keeps its opaque body at 824px (80.5%, ~100px
+    /// margin) and only the translucent rim reaches 858px. The live Dock icon is
+    /// fully opaque, so it must match the 824px body. The 9% row lives inside the
+    /// older 858px body but outside the 824px one, pinning the correct footprint.
     func testDockIconBodyMatchesTheStandardMacOSFootprint() throws {
         let pixels = try pixels(for: .placeholder)
-        let oldBodyRow = pixels.rgba(x: pixels.width * 7 / 100, y: pixels.height / 2)
-        let newBodyRow = pixels.rgba(x: pixels.width * 11 / 100, y: pixels.height / 2)
+        let insideOldBody = pixels.rgba(x: pixels.width * 9 / 100, y: pixels.height / 2)
+        let newBodyRow = pixels.rgba(x: pixels.width * 12 / 100, y: pixels.height / 2)
 
-        XCTAssertEqual(oldBodyRow.alpha, 0)
+        XCTAssertEqual(insideOldBody.alpha, 0)
         XCTAssertGreaterThan(newBodyRow.alpha, 250)
     }
 
