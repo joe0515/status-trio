@@ -21,7 +21,7 @@ enum AppIconPreview {
             battery: BatteryStatus(
                 rawPercentage: 76,
                 isPresent: true,
-                isCharging: true,
+                isCharging: false,
                 isLowPowerMode: false,
                 isConnectedToPower: true
             ),
@@ -65,5 +65,69 @@ enum AppIconPreview {
 
     enum PreviewError: Error {
         case iconUnavailable
+    }
+}
+
+/// Renders the transparent glyph layers for the layered (macOS 26 Liquid
+/// Glass) App Icon package in `Support/AppIcon.icon`.
+///
+/// Both layers draw the same approved glyph geometry that `DockIconRenderer`
+/// composes onto its background — the `DockIconGlyphLayout` frame — without
+/// any background or border, so the system-provided glass fill shows through
+/// and adapts to the system appearance. Only the neutral ink color differs:
+/// light mode draws dark ink (the light Dock palette foreground), dark mode
+/// draws white ink; the charging green and Bluetooth blue stay colored.
+@MainActor
+enum AppIconLayeredPreview {
+    static let layerCanvasSize: CGFloat = 1024
+
+    /// The system's Liquid Glass rendering scales foreground layers to about
+    /// 80.5% around the canvas center (measured: a 601×461 green arc in the
+    /// source PNG renders at 484×371; the system-fill squircle is unaffected).
+    /// Pre-scaling the glyph by the inverse keeps the layered icon's glyph at
+    /// the same fraction of the squircle as the live Dock icon's (78.3%).
+    static let systemForegroundScale: CGFloat = 0.805
+
+    /// Glyph center in top-down canvas coordinates (same center as the 672px
+    /// glyph frame, so the compensated glyph stays visually centered).
+    static let glyphCenter = CGPoint(
+        x: DockIconGlyphLayout.glyphSVGOrigin.x + DockIconGlyphLayout.glyphSVGSize / 2,
+        y: DockIconGlyphLayout.glyphSVGOrigin.y + DockIconGlyphLayout.glyphSVGSize / 2
+    )
+
+    /// DockIconRenderer's `.light` palette foreground.
+    static let lightInk = CGColor(
+        colorSpace: CGColorSpaceCreateDeviceRGB(),
+        components: [29.0 / 255.0, 29.0 / 255.0, 31.0 / 255.0, 1]
+    )!
+
+    /// DockIconRenderer's `.dark` palette foreground.
+    static let darkInk = CGColor(
+        colorSpace: CGColorSpaceCreateDeviceRGB(),
+        components: [1, 1, 1, 1]
+    )!
+
+    static func layerPNGData(foreground: CGColor) throws -> Data {
+        let context = try SheetCanvas.makeContext(
+            width: layerCanvasSize,
+            height: layerCanvasSize,
+            scale: 1
+        )
+        context.clear(CGRect(x: 0, y: 0, width: layerCanvasSize, height: layerCanvasSize))
+
+        let compensatedSize = DockIconGlyphLayout.glyphSVGSize / systemForegroundScale
+        StatusIconRenderer.draw(
+            menuBarStatus: AppIconPreview.state.status,
+            bluetoothAudioOptions: AppIconPreview.state.bluetoothAudioOptions,
+            foreground: foreground,
+            in: context,
+            origin: CGPoint(
+                x: glyphCenter.x - compensatedSize / 2,
+                y: DockIconGlyphLayout.designLength - glyphCenter.y - compensatedSize / 2
+            ),
+            size: compensatedSize
+        )
+
+        return try SheetCanvas.pngData(context)
     }
 }

@@ -9,8 +9,10 @@ struct SystemIconAppearanceMonitorTests {
         var theme = SystemIconAppearanceTheme.default
         let monitor = SystemIconAppearanceMonitor(
             readTheme: { theme },
+            readIsDarkAppearance: { false },
             notificationCenter: center
         )
+        defer { monitor.stop() }
         var reported: [SystemIconAppearanceTheme] = []
         monitor.onChange = { reported.append($0) }
         monitor.start()
@@ -29,8 +31,10 @@ struct SystemIconAppearanceMonitorTests {
         var theme = SystemIconAppearanceTheme.default
         let monitor = SystemIconAppearanceMonitor(
             readTheme: { theme },
+            readIsDarkAppearance: { false },
             notificationCenter: center
         )
+        defer { monitor.stop() }
         var reported: [SystemIconAppearanceTheme] = []
         monitor.onChange = { reported.append($0) }
         monitor.start()
@@ -47,6 +51,7 @@ struct SystemIconAppearanceMonitorTests {
         var theme = SystemIconAppearanceTheme.default
         let monitor = SystemIconAppearanceMonitor(
             readTheme: { theme },
+            readIsDarkAppearance: { false },
             notificationCenter: center
         )
         var reported: [SystemIconAppearanceTheme] = []
@@ -65,6 +70,7 @@ struct SystemIconAppearanceMonitorTests {
         var theme = SystemIconAppearanceTheme.default
         let monitor = SystemIconAppearanceMonitor(
             readTheme: { theme },
+            readIsDarkAppearance: { false },
             notificationCenter: center,
             pollingInterval: 0.05
         )
@@ -82,5 +88,31 @@ struct SystemIconAppearanceMonitorTests {
         theme = SystemIconAppearanceTheme(style: .tinted, appearance: .dark)
         try await Task.sleep(for: .milliseconds(300))
         #expect(reported == [clearTheme])
+    }
+
+    @Test func reportsWhenOnlyTheLightDarkAppearanceChanges() {
+        // The icon-style preference stays "automatic"; only the resolved
+        // light/dark appearance flips. A `.system` Dock background depends on
+        // that value, so the Dock icon must re-render even though the theme is
+        // byte-for-byte unchanged.
+        let center = NotificationCenter()
+        var isDark = false
+        let monitor = SystemIconAppearanceMonitor(
+            readTheme: { .default },
+            readIsDarkAppearance: { isDark },
+            notificationCenter: center
+        )
+        defer { monitor.stop() }
+        var reportCount = 0
+        monitor.onChange = { _ in reportCount += 1 }
+        monitor.start()
+        #expect(reportCount == 0)
+
+        center.post(name: SystemIconAppearanceMonitor.didChangeNotificationName, object: nil)
+        #expect(reportCount == 0)
+
+        isDark = true
+        center.post(name: SystemIconAppearanceMonitor.didChangeNotificationName, object: nil)
+        #expect(reportCount == 1)
     }
 }

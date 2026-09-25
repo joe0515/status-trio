@@ -71,6 +71,7 @@ final class AppIconController {
         self.isDarkAppearance = isDarkAppearance
         self.monitor = SystemIconAppearanceMonitor(
             readTheme: theme,
+            readIsDarkAppearance: isDarkAppearance,
             notificationCenter: notificationCenter
         )
         self.currentPlacement = settings.appIconPlacement

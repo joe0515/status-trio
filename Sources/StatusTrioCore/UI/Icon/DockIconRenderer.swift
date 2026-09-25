@@ -26,11 +26,16 @@ enum DockIconRenderer {
     static let logicalSize: CGFloat = 256
     static let pixelSize = 512
 
-    // Geometry mirrors Support/AppIcon.svg.
-    private static let bodyRect = CGRect(x: 64, y: 64, width: 896, height: 896)
-    private static let bodyCornerRadius: CGFloat = 210
-    private static let borderRect = CGRect(x: 65, y: 65, width: 894, height: 894)
-    private static let borderCornerRadius: CGFloat = 209
+    // Geometry mirrors Support/AppIcon.svg, inset to the standard macOS icon
+    // footprint. A 1024px app icon keeps the rounded square at 858px (≈83.8%,
+    // ~83px margin) so the running Dock tile matches the size of every other
+    // Dock icon — including this app's own layered (Liquid Glass) icon that the
+    // system renders at the same footprint. The earlier 896px body (87.5%)
+    // rendered noticeably larger than its neighbours.
+    private static let bodyRect = CGRect(x: 83, y: 83, width: 858, height: 858)
+    private static let bodyCornerRadius: CGFloat = 201
+    private static let borderRect = CGRect(x: 84, y: 84, width: 856, height: 856)
+    private static let borderCornerRadius: CGFloat = 200
 
     // Build colors in the bitmap's own space so AppIcon.svg's hex values survive
     // without a Generic RGB to Device RGB conversion.

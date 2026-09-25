@@ -10,10 +10,11 @@ import XCTest
 /// ```
 @MainActor
 final class AppIconPreviewTests: XCTestCase {
-    func testPreviewUsesTheChargingWiFiStateWithBluetoothVolumeColor() {
+    func testPreviewUsesTheConnectedPowerWiFiStateWithBluetoothVolumeColor() {
         let state = AppIconPreview.state
 
-        XCTAssertTrue(state.status.battery.isCharging)
+        XCTAssertFalse(state.status.battery.isCharging)
+        XCTAssertTrue(state.status.battery.isConnectedToPower)
         XCTAssertEqual(state.status.wifi.state, .connected)
         XCTAssertEqual(state.status.volume.currentDevice, SheetFixtures.bluetoothDevice)
         XCTAssertTrue(state.bluetoothAudioOptions.usesVolumeColor)
@@ -61,5 +62,21 @@ final class AppIconPreviewTests: XCTestCase {
         try data.write(to: URL(fileURLWithPath: outputPath))
         XCTAssertGreaterThan(data.count, 10_000)
         print("Wrote \(data.count) bytes to \(outputPath)")
+    }
+
+    func testWritesLayeredIconLayersWhenEnvironmentIsSet() throws {
+        guard let outputDir = ProcessInfo.processInfo.environment["STATUS_TRIO_APP_ICON_LAYERS_DIR"] else {
+            throw XCTSkip("Set STATUS_TRIO_APP_ICON_LAYERS_DIR to write the layered icon layers.")
+        }
+
+        try FileManager.default.createDirectory(
+            atPath: outputDir,
+            withIntermediateDirectories: true
+        )
+        let lightData = try AppIconLayeredPreview.layerPNGData(foreground: AppIconLayeredPreview.lightInk)
+        let darkData = try AppIconLayeredPreview.layerPNGData(foreground: AppIconLayeredPreview.darkInk)
+        try lightData.write(to: URL(fileURLWithPath: "\(outputDir)/light.png"))
+        try darkData.write(to: URL(fileURLWithPath: "\(outputDir)/dark.png"))
+        print("Wrote layered icon layers to \(outputDir)")
     }
 }

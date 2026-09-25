@@ -173,6 +173,40 @@ done
 
 iconutil --convert icns --output "$CONTENTS/Resources/AppIcon.icns" "$ICONSET_DIR"
 
+# Compile the layered (macOS 26 Liquid Glass) App Icon into the bundle. On
+# macOS 26+ LaunchServices resolves `CFBundleIconName` from this Assets.car
+# first and renders the appearance-aware icon stacks; on macOS 15–25 the flat
+# `AppIcon.icns` above stays the fallback behind `CFBundleIconFile`.
+#
+# actool also emits its own AppIcon.icns into the output directory; that
+# small-size fallback is discarded on purpose — the iconutil icns above keeps
+# every size up to 1024px.
+LAYERED_ICON_SOURCE="$ROOT/Support/AppIcon.icon"
+ACTOOL_OUT="$(mktemp -d "${TMPDIR:-/tmp}/StatusTrio.actool.XXXXXX")"
+trap 'rm -rf "$ICONSET_ROOT" "$ACTOOL_OUT"' EXIT
+
+xcrun actool "$LAYERED_ICON_SOURCE" \
+    --compile "$ACTOOL_OUT" \
+    --platform macosx \
+    --minimum-deployment-target 15.0 \
+    --app-icon AppIcon \
+    --output-partial-info-plist "$ACTOOL_OUT/partial-info.plist" >/dev/null
+
+if [[ ! -f "$ACTOOL_OUT/Assets.car" ]]; then
+    echo "Error: actool produced no Assets.car from $LAYERED_ICON_SOURCE." >&2
+    exit 1
+fi
+
+# The car is only worth shipping when it carries the appearance-aware icon
+# stacks; a silent specialization drop (see docs/app-icon.md) would otherwise
+# land as a single-appearance icon that never switches.
+if ! assetutil --info "$ACTOOL_OUT/Assets.car" | grep -q 'IconImageStack'; then
+    echo "Error: Assets.car is missing the layered IconImageStack renditions." >&2
+    exit 1
+fi
+
+cp "$ACTOOL_OUT/Assets.car" "$CONTENTS/Resources/Assets.car"
+
 chmod +x "$CONTENTS/MacOS/StatusTrio"
 
 # Carry the deployment target through unchanged instead of hardcoding it — a
